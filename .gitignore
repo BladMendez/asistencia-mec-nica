@@ -1,1 +1,14 @@
+# Claves privadas
 service_account.json
+
+# Entorno virtual
+.venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos del sistema
+.DS_Store

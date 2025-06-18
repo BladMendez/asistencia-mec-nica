@@ -1,11 +1,14 @@
 import streamlit as st
 import gspread
+import pandas as pd
+import json
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
-# === CONFIGURACIÓN DE ACCESO A GOOGLE SHEETS ===
+# === CONFIGURACIÓN DE ACCESO A GOOGLE SHEETS CON SECRETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+service_account_info = st.secrets["service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(service_account_info.to_json()), scope)
 client = gspread.authorize(creds)
 
 SHEET_NAME = "Seguimiento_Asistencia_2025_2"
@@ -32,5 +35,4 @@ if st.button("Ir al registro de asistencia"):
     st.session_state["materia"] = materia
     st.session_state["unidad"] = unidad
     st.session_state["hora"] = hora_actual
-    st.switch_page("pages/asistencia_app.py")
-  # Requiere streamlit >= 1.10.0 con multipage activo
+    st.switch_page("pages/asistencia_app.py")  # debe coincidir con el nombre del archivo en la carpeta /pages

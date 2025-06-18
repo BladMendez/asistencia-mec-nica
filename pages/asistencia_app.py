@@ -4,34 +4,29 @@ import pandas as pd
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
-# === CONFIGURACIÓN DE ACCESO ===
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-client = gspread.authorize(creds)
-
-# === HOJA DE CÁLCULO ===
-SHEET_NAME = "Seguimiento_Asistencia_2025_2"
-sh = client.open(SHEET_NAME)
-
-# === INTERFAZ EN STREAMLIT ===
-st.set_page_config(page_title="Seguimiento Asistencia", layout="wide")
-st.title("📘 Seguimiento de Asistencia - Ingeniería Mecánica")
-
-# === MATERIA Y UNIDAD ===
-materias = [ws.title for ws in sh.worksheets()]
-materia = st.selectbox("Selecciona la materia", materias)
-unidad = st.selectbox("Selecciona la unidad", ["1", "2", "3", "4"])
-
-# === VALIDAR FECHA ===
-hoy = datetime.today()
-if hoy.weekday() >= 5:
-    st.warning("⚠️ Hoy no es un día hábil. Solo puedes registrar asistencia de lunes a viernes.")
+# === Validación de acceso desde home.py ===
+if "materia" not in st.session_state or "unidad" not in st.session_state:
+    st.error("⚠️ Accede desde la página principal para registrar asistencia.")
     st.stop()
 
-fecha_col = f"Unidad {unidad} - {hoy.strftime('%d/%m/%Y')}"
-ws = sh.worksheet(materia)
+# === Cargar datos desde session_state ===
+materia = st.session_state["materia"]
+unidad = st.session_state["unidad"]
+hora_captura = st.session_state["hora"]
+fecha_col = f"Unidad {unidad} - {datetime.today().strftime('%d/%m/%Y')}" 
+
+# === Configuración de acceso a Google Sheets ===
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+client = gspread.authorize(creds)
+SHEET_NAME = "Seguimiento_Asistencia_2025_2"
+sh = client.open(SHEET_NAME)
+ws = sh.worksheet(materia)  # ← aquí ya está definida la variable correctamente
+
+# === Interfaz ===
+st.set_page_config(page_title="Registro de Asistencia", layout="wide")
+st.title(f"📋 Asistencia: {materia}")
+st.caption(f"Unidad: {unidad} | Hora de captura: {hora_captura}")
 
 # === CARGAR DATOS EXISTENTES ===
 df = pd.DataFrame(ws.get_all_records())

@@ -8,7 +8,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 # === CONFIGURACIÓN DE ACCESO A GOOGLE SHEETS CON SECRETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 service_account_info = st.secrets["service_account"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(service_account_info.to_json()), scope)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["service_account"], scope)
+
 client = gspread.authorize(creds)
 
 SHEET_NAME = "Seguimiento_Asistencia_2025_2"

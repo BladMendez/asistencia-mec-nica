@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
+
 # === Validación de acceso desde home.py ===
 if "materia" not in st.session_state or "unidad" not in st.session_state:
     st.error("⚠️ Accede desde la página principal para registrar asistencia.")
@@ -14,7 +15,7 @@ if "materia" not in st.session_state or "unidad" not in st.session_state:
 materia = st.session_state["materia"]
 unidad = st.session_state["unidad"]
 hora_captura = st.session_state["hora"]
-fecha_col = f"Unidad {unidad} - {datetime.today().strftime('%d/%m/%Y')}"
+fecha_col = f"Unidad {unidad} - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
 
 # === Configuración de acceso a Google Sheets desde secrets ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -38,6 +39,8 @@ df = pd.DataFrame(ws.get_all_records())
 if df.empty:
     st.info("No hay alumnos registrados.")
     st.stop()
+
+
 
 # === Crear columna si no existe ===
 if fecha_col not in df.columns:

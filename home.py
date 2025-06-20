@@ -4,6 +4,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
+import pytz
 
 # === CONFIGURACIÓN DE ACCESO A GOOGLE SHEETS CON SECRETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -28,7 +29,9 @@ unidad = st.selectbox("Unidad:", ["1", "2", "3", "4", "5","6", "7", "8","asesori
 
 # === VALIDACIÓN DE HORARIO ===
 st.subheader("Hora de captura")
-hora_actual = datetime.now().strftime("%H:%M")
+zona = pytz.timezone("America/Mexico_City")
+hora_local = datetime.now(zona)
+hora_actual = hora_local.strftime("%H:%M")
 st.markdown(f"⏰ Hora actual: **{hora_actual}**")
 
 # === BOTÓN PARA CONTINUAR ===

@@ -193,39 +193,52 @@ st.plotly_chart(fig3, use_container_width=True)
 
 
 
-# === GRÁFICA 4: Porcentaje de asistencia grupal por unidad ===
-st.subheader("📊 Porcentaje grupal de asistencia por unidad")
-unidad_cols = [col for col in df_numeric_grouped.columns if col.startswith("Unidad")]
-porcentaje_unidad = df_numeric_grouped[unidad_cols].mean() * 1
+# === GRÁFICA 4: Porcentaje general de asistencia de la materia ===
+st.subheader("📊 Porcentaje general de asistencia de la materia")
 
-def clasificar_unidad(p):
-    if p < 70:
-        return "🔴 Riesgo"
-    elif p < 85:
-        return "🟠 Aceptable"
-    else:
-        return "🟢 Excelente"
+# 1. Tomar columnas que contienen la palabra "Unidad"
+unidad_cols = [col for col in df_numeric.columns if "Unidad" in col]
 
+# 2. Calcular asistencias totales y posibles
+total_asistencias = df_numeric[unidad_cols].sum().sum()
+total_posibles = df_numeric.shape[0] * len(unidad_cols)
+porcentaje_general = (total_asistencias / total_posibles) * 100
+
+# 3. Clasificar visualmente
+if porcentaje_general < 70:
+    estado = "🔴 Riesgo"
+    color = "red"
+elif porcentaje_general < 85:
+    estado = "🟠 Aceptable"
+    color = "orange"
+else:
+    estado = "🟢 Excelente"
+    color = "green"
+
+# 4. Crear DataFrame para gráfica
 porcentaje_df = pd.DataFrame({
-    "Unidad": porcentaje_unidad.index,
-    "Porcentaje": porcentaje_unidad.values
+    "Categoría": ["Materia"],
+    "Porcentaje": [porcentaje_general],
+    "Estado": [estado],
+    "Texto": [f"{porcentaje_general:.1f}% {estado}"]
 })
-porcentaje_df["Estado"] = porcentaje_df["Porcentaje"].apply(clasificar_unidad)
-porcentaje_df["Texto"] = porcentaje_df["Porcentaje"].round(1).astype(str) + "% " + porcentaje_df["Estado"]
 
+# 5. Gráfica de barra global
 fig4 = px.bar(
     porcentaje_df,
-    x="Unidad",
+    x="Categoría",
     y="Porcentaje",
     color="Estado",
     text="Texto",
-    title="Porcentaje grupal de asistencia por unidad",
     color_discrete_map={
         "🔴 Riesgo": "red",
         "🟠 Aceptable": "orange",
         "🟢 Excelente": "green"
-    }
+    },
+    title="Porcentaje general de asistencia en la materia",
+    labels={"Porcentaje": "% Asistencia"}
 )
+
 fig4.update_traces(textposition="inside", textfont_color="white")
 fig4.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig4, use_container_width=True)

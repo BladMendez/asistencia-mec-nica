@@ -3,6 +3,7 @@ import gspread
 import pandas as pd
 import json
 from datetime import datetime
+
 from oauth2client.service_account import ServiceAccountCredentials
 
 
@@ -11,11 +12,23 @@ if "materia" not in st.session_state or "unidad" not in st.session_state:
     st.error("⚠️ Accede desde la página principal para registrar asistencia.")
     st.stop()
 
+from datetime import datetime, timedelta
+import pytz
+
 # === Cargar datos desde session_state ===
 materia = st.session_state["materia"]
 unidad = st.session_state["unidad"]
-hora_captura = st.session_state["hora"]
-fecha_col = f"Unidad {unidad} - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+
+# Obtener hora local de México con fallback seguro
+try:
+    zona = pytz.timezone("America/Mexico_City")
+    hora_local = datetime.now(zona)
+except Exception:
+    hora_local = datetime.utcnow() - timedelta(hours=5)  # Fallback UTC-5 si falla
+
+# Guardar hora para mostrar y para usar en el encabezado de la columna
+hora_captura = hora_local.strftime("%H:%M")
+fecha_col = f"Unidad {unidad} - {hora_local.strftime('%d/%m/%Y %H:%M')}"
 
 # === Configuración de acceso a Google Sheets desde secrets ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]

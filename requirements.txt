@@ -3,3 +3,5 @@ gspread
 oauth2client
 pandas
 plotly
+pytz
+pip freeze > requirements.txt  

@@ -1,8 +1,10 @@
 # Claves privadas
 service_account.json
+.streamlit/secrets.toml  
 
 # Entorno virtual
 .venv/
+venv/
 
 # Archivos temporales de Python
 __pycache__/
@@ -12,3 +14,7 @@ __pycache__/
 
 # Archivos del sistema
 .DS_Store
+.env  # <--- por si usas dotenv en el futuro
+
+# Otros temporales de VSCode
+.vscode/

@@ -41,13 +41,17 @@ from collections import defaultdict
 
 # === AGRUPAR COLUMNAS POR NOMBRE DE UNIDAD ===
 unidad_map = defaultdict(list)
-patron = r"(Unidad \d+)"  # extrae "Unidad 1", "Unidad 2", etc.
 
 for col in asistencia_cols:
-    match = re.match(patron, col)
-    if match:
-        unidad_base = match.group(1)
-        unidad_map[unidad_base].append(col)
+    if "Propedéutico" in col:
+        unidad_map["Unidad 0 - Propedéutico"].append(col)
+    elif "Asesoría" in col:
+        unidad_map["Unidad A - Asesoría"].append(col)
+    else:
+        match = re.match(r"(Unidad \d+)", col)
+        if match:
+            unidad_base = match.group(1)
+            unidad_map[unidad_base].append(col)
 
 # === CALCULAR EL PROMEDIO DE ASISTENCIA POR UNIDAD (agrupada) ===
 df_numeric_grouped = pd.DataFrame()

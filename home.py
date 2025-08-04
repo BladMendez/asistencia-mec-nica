@@ -25,7 +25,7 @@ st.subheader("Selecciona la materia que impartes")
 materia = st.selectbox("Materia:", [ws.title for ws in sh.worksheets()])
 
 st.subheader("Selecciona la unidad de captura")
-unidad = st.selectbox("Unidad:", ["1", "2", "3", "4", "5","6", "7", "8","asesoria","Propedeutico"])
+unidad = st.selectbox("Unidad:", ["1", "2", "3", "4", "5","6", "7", "8","Asesoria","Propedéutico"])
 
 # === VALIDACIÓN DE HORARIO ===
 st.subheader("Hora de captura")

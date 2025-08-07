@@ -31,10 +31,18 @@ if df.empty:
 asistencia_cols = [col for col in df.columns if col.startswith("Unidad")]
 df_asistencia = df[["Nombre", "No de control"] + asistencia_cols]
 
-# === CONVERTIR ✓ / ✗ A 1 / 0 ===
+# === CONVERTIR ✓ / ~ / ✗ A 1 / 0.5 / 0 ===
+def convertir_asistencia(valor):
+    if valor == "✓":
+        return 1
+    elif valor == "~":
+        return 0.5
+    else:
+        return 0
+
 df_numeric = df_asistencia.copy()
 for col in asistencia_cols:
-    df_numeric[col] = df_numeric[col].apply(lambda x: 1 if x == "✓" else 0)
+    df_numeric[col] = df_numeric[col].apply(convertir_asistencia)
 
 import re
 from collections import defaultdict
@@ -246,3 +254,116 @@ fig4 = px.bar(
 fig4.update_traces(textposition="inside", textfont_color="white")
 fig4.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig4, use_container_width=True)
+
+# Grafica 6 Retardos
+st.header("📊 Retardos Registrados")
+
+# === 1. Total de retardos por alumno ===
+st.subheader("👥 Total de retardos por alumno")
+
+df_retardos = df.copy()
+retardo_cols = [col for col in df_retardos.columns if col.startswith("Unidad")]
+
+df_retardos["Total Retardos"] = df_retardos[retardo_cols].apply(
+    lambda row: sum([1 for val in row if val == "~"]), axis=1
+)
+
+fig_r1 = px.bar(
+    df_retardos,
+    x="Nombre",
+    y="Total Retardos",
+    title="Cantidad total de retardos por alumno",
+    labels={"Total Retardos": "Retardos"},
+)
+fig_r1.update_traces(textposition="outside")
+st.plotly_chart(fig_r1, use_container_width=True)
+
+# === 2. Porcentaje de retardos por unidad ===
+st.subheader("📦 Porcentaje de retardos por unidad")
+
+porcentajes_retardos = {}
+
+for col in retardo_cols:
+    total = df_retardos[col].count()
+    retardos = df_retardos[col].apply(lambda x: 1 if x == "~" else 0).sum()
+    porcentaje = (retardos / total) * 100 if total > 0 else 0
+    porcentajes_retardos[col] = porcentaje
+
+df_porcentaje_retardos = pd.DataFrame({
+    "Unidad": list(porcentajes_retardos.keys()),
+    "Porcentaje de Retardos": list(porcentajes_retardos.values())
+})
+
+fig_r2 = px.bar(
+    df_porcentaje_retardos,
+    x="Unidad",
+    y="Porcentaje de Retardos",
+    text="Porcentaje de Retardos",
+    title="Porcentaje de retardos por unidad",
+    labels={"Porcentaje de Retardos": "% Retardos"},
+)
+fig_r2.update_traces(texttemplate='%{text:.1f}%', textposition="inside", textfont_color="white")
+fig_r2.update_layout(yaxis_range=[0, 100])
+st.plotly_chart(fig_r2, use_container_width=True)
+
+# === 3. Porcentaje general de retardos ===
+st.subheader("📈 Porcentaje general de retardos")
+
+total_registros = df_retardos[retardo_cols].count().sum()
+total_retardos = df_retardos[retardo_cols].applymap(lambda x: 1 if x == "~" else 0).sum().sum()
+porcentaje_general_retardos = (total_retardos / total_registros) * 100 if total_registros > 0 else 0
+
+df_retardo_global = pd.DataFrame({
+    "Categoría": ["Materia"],
+    "Porcentaje": [porcentaje_general_retardos],
+    "Texto": [f"{porcentaje_general_retardos:.1f}%"]
+})
+
+fig_r3 = px.bar(
+    df_retardo_global,
+    x="Categoría",
+    y="Porcentaje",
+    text="Texto",
+    title="Porcentaje general de retardos en la materia",
+    labels={"Porcentaje": "% Retardos"},
+    color_discrete_sequence=["orange"]
+)
+
+fig_r3.update_traces(textposition="inside", textfont_color="white")
+fig_r3.update_layout(yaxis_range=[0, 100])
+st.plotly_chart(fig_r3, use_container_width=True)
+
+
+# === 4. Historial de retardos por alumno ===
+st.subheader("📈 Historial de retardos por alumno")
+
+alumno_retardo = st.selectbox("Selecciona un alumno para ver sus retardos", df_retardos["Nombre"])
+fila = df_retardos[df_retardos["Nombre"] == alumno_retardo]
+
+# Contar cuántas veces tuvo retardo por unidad
+retardos_por_unidad = {}
+for col in retardo_cols:
+    valor = fila[col].values[0]
+    retardos_por_unidad[col] = 1 if valor == "~" else 0
+
+df_historial_retardos = pd.DataFrame({
+    "Unidad": list(retardos_por_unidad.keys()),
+    "Retardo": list(retardos_por_unidad.values())
+})
+
+fig_r4 = px.bar(
+    df_historial_retardos,
+    x="Unidad",
+    y="Retardo",
+    title=f"Historial de retardos por unidad: {alumno_retardo}",
+    labels={"Retardo": "Retardo (1 = sí)"},
+    color="Retardo",
+    color_continuous_scale=["#CCCCCC", "orange"]
+)
+
+fig_r4.update_layout(
+    yaxis=dict(tickvals=[0, 1], ticktext=["No", "Sí"]),
+    coloraxis_showscale=False
+)
+fig_r4.update_traces(text=df_historial_retardos["Retardo"], textposition="outside")
+st.plotly_chart(fig_r4, use_container_width=True)

@@ -25,7 +25,7 @@ hora_local = datetime.now(pytz.utc).astimezone(zona)
 
 # === Guardar hora para mostrar y para usar en el encabezado de la columna ===
 hora_captura = hora_local.strftime("%H:%M")
-fecha_col = f"Unidad {unidad} - {hora_local.strftime('%d/%m/%Y %H:%M')}"
+fecha_col = f"Unidad {unidad} - {hora_local.strftime('%d/%m/%Y')}"
 
 
 # === Configuración de acceso a Google Sheets desde secrets ===

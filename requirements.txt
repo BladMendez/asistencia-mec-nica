@@ -4,3 +4,6 @@ oauth2client
 pandas
 plotly
 pytz
+google-auth
+google-auth-oauthlib
+PyMuPDF

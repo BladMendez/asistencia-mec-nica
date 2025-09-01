@@ -18,7 +18,7 @@ sh = client.open(SHEET_NAME)
 
 # === INTERFAZ DE USUARIO ===
 st.set_page_config(page_title="Inicio - Registro de Asistencia", layout="wide")
-st.title("🎓 Plataforma de Registro de Asistencia - Ingeniería Mecánica")
+st.title("🎓 Plataforma de Registro de Asistencia ITESP ")
 
 # === SELECCIÓN DE MATERIA Y UNIDAD ===
 st.subheader("Selecciona la materia que impartes")

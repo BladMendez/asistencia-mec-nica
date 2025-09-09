@@ -6,7 +6,7 @@ import plotly.express as px
 
 # === CONFIGURACIÓN DE STREAMLIT ===
 st.set_page_config(page_title="Gráficas de Asistencia", layout="wide")
-st.title("📊 Visualización de Asistencia")
+st.title(" Visualización de Asistencia")
 
 # === AUTORIZACIÓN DE GOOGLE SHEETS DESDE SECRETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -72,7 +72,7 @@ for unidad, columnas in unidad_map.items():
 
 
 # === GRÁFICA 1: Porcentaje de asistencia por unidad (agrupado) ===
-st.subheader("📊 Porcentaje de asistencia por unidad")
+st.subheader(" Porcentaje de asistencia por unidad")
 
 # Promedio de asistencia por unidad (agrupada)
 porcentaje_por_unidad = df_numeric_grouped.drop(columns=["Nombre", "No de control"]).mean().reset_index()
@@ -110,7 +110,7 @@ fig1.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig1, use_container_width=True)
 
 # === GRÁFICA 2: Total por alumno ===
-st.subheader("👥 Total de asistencias por alumno")
+st.subheader(" Total de asistencias por alumno")
 
 # Asegurarse de usar solo las columnas de asistencia (las que empiezan con "Unidad")
 asistencia_cols_sin_info = [col for col in df_numeric_grouped.columns if col.startswith("Unidad")]
@@ -160,7 +160,7 @@ fig2.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig2, use_container_width=True)
 
 # === GRÁFICA 3: Detalle por alumno ===
-st.subheader("📈 Historial por alumno")
+st.subheader(" Historial por alumno")
 alumno = st.selectbox("Selecciona un alumno", df_numeric_grouped["Nombre"])
 row = df_numeric_grouped[df_numeric_grouped["Nombre"] == alumno].set_index("Nombre")
 
@@ -206,7 +206,7 @@ st.plotly_chart(fig3, use_container_width=True)
 
 
 # === GRÁFICA 4: Porcentaje general de asistencia de la materia ===
-st.subheader("📊 Porcentaje general de asistencia de la materia")
+st.subheader(" Porcentaje general de asistencia de la materia")
 
 # 1. Tomar columnas que contienen la palabra "Unidad"
 unidad_cols = [col for col in df_numeric.columns if "Unidad" in col]
@@ -256,10 +256,10 @@ fig4.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig4, use_container_width=True)
 
 # Grafica 6 Retardos
-st.header("📊 Retardos Registrados")
+st.header(" Retardos Registrados")
 
 # === 1. Total de retardos por alumno ===
-st.subheader("👥 Total de retardos por alumno")
+st.subheader(" Total de retardos por alumno")
 
 df_retardos = df.copy()
 retardo_cols = [col for col in df_retardos.columns if col.startswith("Unidad")]
@@ -279,7 +279,7 @@ fig_r1.update_traces(textposition="outside")
 st.plotly_chart(fig_r1, use_container_width=True)
 
 # === 2. Porcentaje de retardos por unidad ===
-st.subheader("📦 Porcentaje de retardos por unidad")
+st.subheader(" Porcentaje de retardos por unidad")
 
 porcentajes_retardos = {}
 
@@ -307,7 +307,7 @@ fig_r2.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig_r2, use_container_width=True)
 
 # === 3. Porcentaje general de retardos ===
-st.subheader("📈 Porcentaje general de retardos")
+st.subheader(" Porcentaje general de retardos")
 
 total_registros = df_retardos[retardo_cols].count().sum()
 total_retardos = df_retardos[retardo_cols].applymap(lambda x: 1 if x == "~" else 0).sum().sum()
@@ -335,7 +335,7 @@ st.plotly_chart(fig_r3, use_container_width=True)
 
 
 # === 4. Historial de retardos por alumno ===
-st.subheader("📈 Historial de retardos por alumno")
+st.subheader(" Historial de retardos por alumno")
 
 alumno_retardo = st.selectbox("Selecciona un alumno para ver sus retardos", df_retardos["Nombre"])
 fila = df_retardos[df_retardos["Nombre"] == alumno_retardo]

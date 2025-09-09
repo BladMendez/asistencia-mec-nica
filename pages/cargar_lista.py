@@ -9,7 +9,7 @@ from gspread.exceptions import WorksheetNotFound, APIError
 
 # === Config de página ===
 st.set_page_config(page_title="Cargar Lista de Alumnos", layout="wide")
-st.title("📄 Cargar lista de asistencia (PDF)")
+st.title(" Cargar lista de asistencia (PDF)")
 
 # --- helpers ---
 def sanitize_title(title: str) -> str:
@@ -160,10 +160,10 @@ while i < N:
 
 # ---------- A PARTIR DE AQUÍ TODO VA *FUERA* DEL WHILE ----------
 
-st.success(f"✅ Lista detectada con éxito: {len(alumnos)} alumnos")
-st.write(f"📘 Materia: `{materia}`")
-st.write(f"👥 Grupo: `{grupo}`")
-st.write(f"👨‍🏫 Docente: `{docente}`")
+st.success(f" Lista detectada con éxito: {len(alumnos)} alumnos")
+st.write(f" Materia: `{materia}`")
+st.write(f" Grupo: `{grupo}`")
+st.write(f" Docente: `{docente}`")
 
 # === DataFrame con ENCABEZADOS EXACTOS que esperan tus gráficas ===
 df = pd.DataFrame(
@@ -175,11 +175,11 @@ st.dataframe(df, use_container_width=True)
 # === Subir a Google Sheets (NOMBRE DE PESTAÑA = grupo - materia) ===
 titulo_hoja = f"{grupo} - {materia}".strip()
 
-if st.button("📤 Crear/actualizar pestaña en Google Sheets", key=f"btn_subir_{titulo_hoja}"):
+if st.button(" Crear/actualizar pestaña en Google Sheets", key=f"btn_subir_{titulo_hoja}"):
     subir_a_google_sheets(nombre_hoja=titulo_hoja, df=df)
 
 # (Opcional) Verificar encabezados sin modificar nada
-if st.button("🔎 Verificar en Google Sheets", key=f"btn_verificar_{titulo_hoja}"):
+if st.button(" Verificar en Google Sheets", key=f"btn_verificar_{titulo_hoja}"):
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(st.secrets["service_account"], scopes=scopes)

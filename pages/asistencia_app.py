@@ -9,7 +9,7 @@ import pytz
 
 # === Validación de acceso desde home.py ===
 if "materia" not in st.session_state or "unidad" not in st.session_state:
-    st.error("⚠️ Accede desde la página principal para registrar asistencia.")
+    st.error(" Accede desde la página principal para registrar asistencia.")
     st.stop()
 
 
@@ -21,7 +21,7 @@ unidad = st.session_state["unidad"]
 # === Interfaz ===
 # [NUEVO] Mantenemos la configuración de página al inicio visual de la UI
 st.set_page_config(page_title="Registro de Asistencia", layout="wide")
-st.title(f"📋 Asistencia: {materia}")
+st.title(f" Asistencia: {materia}")
 
 # [NUEVO] Mostramos última hora fija de captura, si existe (no dispara nuevas columnas)
 ultima_hora = st.session_state.get("ultima_hora_captura", "—")
@@ -62,7 +62,7 @@ zona = pytz.timezone("America/Mexico_City")
 # === Lista de asistencia ===
 # [NUEVO] Usamos st.form para que la app NO ejecute guardados hasta pulsar el botón.
 with st.form(key="form_asistencia", clear_on_submit=False):
-    st.subheader("📋 Lista de alumnos")
+    st.subheader(" Lista de alumnos")
     asistencia = []
     for i, row in df.iterrows():
         nombre = row["Nombre"]

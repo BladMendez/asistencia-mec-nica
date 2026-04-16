@@ -115,10 +115,7 @@ st.subheader(" Total de asistencias por alumno")
 asistencia_cols_sin_info = [col for col in df_numeric_grouped.columns if col.startswith("Unidad")]
 
 # Calcular total y porcentaje de asistencia
-df_numeric_grouped["Total Alumno"] = df_numeric_grouped[asistencia_cols_sin_info].sum(axis=1)
-# Ya que los valores están en porcentaje (0-100), no multiplicamos por 100 se multiplica por 1 o simplemente por nada 
-df_numeric_grouped["% Asistencia"] = (df_numeric_grouped["Total Alumno"] / len(asistencia_cols_sin_info)) * 1
-
+df_numeric_grouped["% Asistencia"] = df_numeric_grouped[asistencia_cols_sin_info].mean(axis=1)
 # Texto para la barra
 df_numeric_grouped["Texto"] = df_numeric_grouped["% Asistencia"].round(1).astype(str) + "%"
 
@@ -309,7 +306,7 @@ st.plotly_chart(fig_r2, use_container_width=True)
 st.subheader(" Porcentaje general de retardos")
 
 total_registros = df_retardos[retardo_cols].count().sum()
-total_retardos = df_retardos[retardo_cols].applymap(lambda x: 1 if x == "~" else 0).sum().sum()
+total_retardos = (df_retardos[retardo_cols] == "~").astype(int).sum().sum()
 porcentaje_general_retardos = (total_retardos / total_registros) * 100 if total_registros > 0 else 0
 
 df_retardo_global = pd.DataFrame({

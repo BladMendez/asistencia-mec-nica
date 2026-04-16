@@ -3,14 +3,22 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import plotly.express as px
+import re
+from collections import defaultdict
 
 # === CONFIGURACIÓN DE STREAMLIT ===
 st.set_page_config(page_title="Gráficas de Asistencia", layout="wide")
-st.title(" Visualización de Asistencia")
+st.title("Visualización de Asistencia")
 
 # === AUTORIZACIÓN DE GOOGLE SHEETS DESDE SECRETS ===
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["service_account"], scope)
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    st.secrets["service_account"],
+    scope
+)
 client = gspread.authorize(creds)
 
 # === SELECCIÓN DE MATERIA ===
@@ -29,7 +37,19 @@ if df.empty:
 
 # === EXTRAER COLUMNAS DE ASISTENCIA ===
 asistencia_cols = [col for col in df.columns if col.startswith("Unidad")]
-df_asistencia = df[["Nombre", "No de control"] + asistencia_cols]
+
+if not asistencia_cols:
+    st.warning("No se encontraron columnas de asistencia que comiencen con 'Unidad'.")
+    st.stop()
+
+columnas_base = ["Nombre", "No de control"]
+columnas_existentes = [col for col in columnas_base if col in df.columns]
+
+if len(columnas_existentes) < 2:
+    st.error("Faltan columnas obligatorias: 'Nombre' y/o 'No de control'.")
+    st.stop()
+
+df_asistencia = df[columnas_base + asistencia_cols].copy()
 
 # === CONVERTIR ✓ / ~ / ✗ A 1 / 0.5 / 0 ===
 def convertir_asistencia(valor):
@@ -43,9 +63,6 @@ def convertir_asistencia(valor):
 df_numeric = df_asistencia.copy()
 for col in asistencia_cols:
     df_numeric[col] = df_numeric[col].apply(convertir_asistencia)
-
-import re
-from collections import defaultdict
 
 # === AGRUPAR COLUMNAS POR NOMBRE DE UNIDAD ===
 unidad_map = defaultdict(list)
@@ -61,23 +78,26 @@ for col in asistencia_cols:
             unidad_base = match.group(1)
             unidad_map[unidad_base].append(col)
 
-# === CALCULAR EL PROMEDIO DE ASISTENCIA POR UNIDAD (agrupada) ===
+# === CALCULAR EL PROMEDIO DE ASISTENCIA POR UNIDAD (AGRUPADA) ===
 df_numeric_grouped = pd.DataFrame()
 df_numeric_grouped["Nombre"] = df["Nombre"]
 df_numeric_grouped["No de control"] = df["No de control"]
 
 for unidad, columnas in unidad_map.items():
+    # Aquí usamos df_numeric porque ya trae ✓=1, ~=0.5, demás=0
     df_numeric_grouped[unidad] = df_numeric[columnas].mean(axis=1) * 100
 
+# === GRÁFICA 1: PORCENTAJE DE ASISTENCIA POR UNIDAD (AGRUPADO) ===
+st.subheader("Porcentaje de asistencia por unidad")
 
-# === GRÁFICA 1: Porcentaje de asistencia por unidad (agrupado) ===
-st.subheader(" Porcentaje de asistencia por unidad")
-
-# Promedio de asistencia por unidad (agrupada)
-porcentaje_por_unidad = df_numeric_grouped.drop(columns=["Nombre", "No de control"]).mean().reset_index()
+porcentaje_por_unidad = (
+    df_numeric_grouped
+    .drop(columns=["Nombre", "No de control"])
+    .mean()
+    .reset_index()
+)
 porcentaje_por_unidad.columns = ["Unidad", "Porcentaje"]
 
-# Clasificar con emojis y colores
 def clasificar_unidad(p):
     if p < 70:
         return "🔴 Riesgo"
@@ -87,7 +107,11 @@ def clasificar_unidad(p):
         return "🟢 Excelente"
 
 porcentaje_por_unidad["Estado"] = porcentaje_por_unidad["Porcentaje"].apply(clasificar_unidad)
-porcentaje_por_unidad["Texto"] = porcentaje_por_unidad["Porcentaje"].round(1).astype(str) + "% " + porcentaje_por_unidad["Estado"]
+porcentaje_por_unidad["Texto"] = (
+    porcentaje_por_unidad["Porcentaje"].round(1).astype(str)
+    + "% "
+    + porcentaje_por_unidad["Estado"]
+)
 
 fig1 = px.bar(
     porcentaje_por_unidad,
@@ -104,24 +128,22 @@ fig1 = px.bar(
     labels={"Porcentaje": "% Asistencia"}
 )
 
-fig1.update_traces(textposition='inside', textfont_color="white")
+fig1.update_traces(textposition="inside", textfont_color="white")
 fig1.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig1, use_container_width=True)
 
-# === GRÁFICA 2: Total por alumno ===
-st.subheader(" Total de asistencias por alumno")
+# === GRÁFICA 2: PORCENTAJE DE ASISTENCIA POR ALUMNO ===
+st.subheader("Porcentaje de asistencia por alumno")
 
-# Asegurarse de usar solo las columnas de asistencia (las que empiezan con "Unidad")
-asistencia_cols_sin_info = [col for col in df_numeric_grouped.columns if col.startswith("Unidad")]
+asistencia_cols_sin_info = [
+    col for col in df_numeric_grouped.columns if col.startswith("Unidad")
+]
 
-# Calcular total y porcentaje de asistencia
 df_numeric_grouped["% Asistencia"] = df_numeric_grouped[asistencia_cols_sin_info].mean(axis=1)
-# Texto para la barra
 df_numeric_grouped["Texto"] = df_numeric_grouped["% Asistencia"].round(1).astype(str) + "%"
 
-# Clasificación por nivel de asistencia
 def clasificar(asistencia):
-    if asistencia <= 69:
+    if asistencia < 70:
         return "⚠️ En riesgo (< 70%)"
     elif asistencia < 85:
         return "🟠 Aceptable"
@@ -129,13 +151,10 @@ def clasificar(asistencia):
         return "🟢 Excelente"
 
 df_numeric_grouped["Estado"] = df_numeric_grouped["% Asistencia"].apply(clasificar)
-df_numeric_grouped["Texto"] = df_numeric_grouped["% Asistencia"].round(1).astype(str) + "%"
 
 st.write("Data para gráfica:")
 st.dataframe(df_numeric_grouped[["Nombre", "% Asistencia", "Texto", "Estado"]])
 
-
-# Crear la gráfica
 fig2 = px.bar(
     df_numeric_grouped,
     x="Nombre",
@@ -151,20 +170,19 @@ fig2 = px.bar(
     labels={"% Asistencia": "% Asistencia"}
 )
 
-fig2.update_traces(textposition='inside', textfont_color='white')
+fig2.update_traces(textposition="inside", textfont_color="white")
 fig2.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig2, use_container_width=True)
 
-# === GRÁFICA 3: Detalle por alumno ===
-st.subheader(" Historial por alumno")
+# === GRÁFICA 3: DETALLE POR ALUMNO ===
+st.subheader("Historial por alumno")
+
 alumno = st.selectbox("Selecciona un alumno", df_numeric_grouped["Nombre"])
 row = df_numeric_grouped[df_numeric_grouped["Nombre"] == alumno].set_index("Nombre")
 
-# Extraer las columnas de unidad (excluyendo Nombre y No de control)
 unidades = [col for col in df_numeric_grouped.columns if col.startswith("Unidad")]
-valores = (row[unidades].values[0]) * 1  # Convertir 0/1 a porcentaje
+valores = row[unidades].values[0]
 
-# Clasificar con emojis
 def clasificar_emoji(p):
     if p < 70:
         return "🔴 Riesgo"
@@ -175,10 +193,14 @@ def clasificar_emoji(p):
 
 detalle_df = pd.DataFrame({
     "Unidad": unidades,
-    "Porcentaje": valores,
+    "Porcentaje": valores
 })
 detalle_df["Estado"] = detalle_df["Porcentaje"].apply(clasificar_emoji)
-detalle_df["Texto"] = detalle_df["Porcentaje"].round(1).astype(str) + "% " + detalle_df["Estado"]
+detalle_df["Texto"] = (
+    detalle_df["Porcentaje"].round(1).astype(str)
+    + "% "
+    + detalle_df["Estado"]
+)
 
 fig3 = px.bar(
     detalle_df,
@@ -195,35 +217,26 @@ fig3 = px.bar(
     labels={"Porcentaje": "% Asistencia"}
 )
 
-fig3.update_traces(textposition='inside', textfont_color="white")
+fig3.update_traces(textposition="inside", textfont_color="white")
 fig3.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig3, use_container_width=True)
 
+# === GRÁFICA 4: PORCENTAJE GENERAL DE ASISTENCIA DE LA MATERIA ===
+st.subheader("Porcentaje general de asistencia de la materia")
 
+unidad_cols = [col for col in df_numeric.columns if col.startswith("Unidad")]
 
-# === GRÁFICA 4: Porcentaje general de asistencia de la materia ===
-st.subheader(" Porcentaje general de asistencia de la materia")
-
-# 1. Tomar columnas que contienen la palabra "Unidad"
-unidad_cols = [col for col in df_numeric.columns if "Unidad" in col]
-
-# 2. Calcular asistencias totales y posibles
 total_asistencias = df_numeric[unidad_cols].sum().sum()
 total_posibles = df_numeric.shape[0] * len(unidad_cols)
-porcentaje_general = (total_asistencias / total_posibles) * 100
+porcentaje_general = (total_asistencias / total_posibles) * 100 if total_posibles > 0 else 0
 
-# 3. Clasificar visualmente
 if porcentaje_general < 70:
     estado = "🔴 Riesgo"
-    color = "red"
 elif porcentaje_general < 85:
     estado = "🟠 Aceptable"
-    color = "orange"
 else:
     estado = "🟢 Excelente"
-    color = "green"
 
-# 4. Crear DataFrame para gráfica
 porcentaje_df = pd.DataFrame({
     "Categoría": ["Materia"],
     "Porcentaje": [porcentaje_general],
@@ -231,7 +244,6 @@ porcentaje_df = pd.DataFrame({
     "Texto": [f"{porcentaje_general:.1f}% {estado}"]
 })
 
-# 5. Gráfica de barra global
 fig4 = px.bar(
     porcentaje_df,
     x="Categoría",
@@ -251,17 +263,18 @@ fig4.update_traces(textposition="inside", textfont_color="white")
 fig4.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig4, use_container_width=True)
 
-# Grafica 6 Retardos
-st.header(" Retardos Registrados")
-
-# === 1. Total de retardos por alumno ===
-st.subheader(" Total de retardos por alumno")
+# === GRÁFICAS DE RETARDOS ===
+st.header("Retardos Registrados")
 
 df_retardos = df.copy()
 retardo_cols = [col for col in df_retardos.columns if col.startswith("Unidad")]
 
+# === 1. TOTAL DE RETARDOS POR ALUMNO ===
+st.subheader("Total de retardos por alumno")
+
 df_retardos["Total Retardos"] = df_retardos[retardo_cols].apply(
-    lambda row: sum([1 for val in row if val == "~"]), axis=1
+    lambda row: sum(1 for val in row if val == "~"),
+    axis=1
 )
 
 fig_r1 = px.bar(
@@ -269,19 +282,19 @@ fig_r1 = px.bar(
     x="Nombre",
     y="Total Retardos",
     title="Cantidad total de retardos por alumno",
-    labels={"Total Retardos": "Retardos"},
+    labels={"Total Retardos": "Retardos"}
 )
 fig_r1.update_traces(textposition="outside")
 st.plotly_chart(fig_r1, use_container_width=True)
 
-# === 2. Porcentaje de retardos por unidad ===
-st.subheader(" Porcentaje de retardos por unidad")
+# === 2. PORCENTAJE DE RETARDOS POR UNIDAD ===
+st.subheader("Porcentaje de retardos por unidad")
 
 porcentajes_retardos = {}
 
 for col in retardo_cols:
     total = df_retardos[col].count()
-    retardos = df_retardos[col].apply(lambda x: 1 if x == "~" else 0).sum()
+    retardos = (df_retardos[col] == "~").astype(int).sum()
     porcentaje = (retardos / total) * 100 if total > 0 else 0
     porcentajes_retardos[col] = porcentaje
 
@@ -296,18 +309,25 @@ fig_r2 = px.bar(
     y="Porcentaje de Retardos",
     text="Porcentaje de Retardos",
     title="Porcentaje de retardos por unidad",
-    labels={"Porcentaje de Retardos": "% Retardos"},
+    labels={"Porcentaje de Retardos": "% Retardos"}
 )
-fig_r2.update_traces(texttemplate='%{text:.1f}%', textposition="inside", textfont_color="white")
+
+fig_r2.update_traces(
+    texttemplate="%{text:.1f}%",
+    textposition="inside",
+    textfont_color="white"
+)
 fig_r2.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig_r2, use_container_width=True)
 
-# === 3. Porcentaje general de retardos ===
-st.subheader(" Porcentaje general de retardos")
+# === 3. PORCENTAJE GENERAL DE RETARDOS ===
+st.subheader("Porcentaje general de retardos")
 
 total_registros = df_retardos[retardo_cols].count().sum()
 total_retardos = (df_retardos[retardo_cols] == "~").astype(int).sum().sum()
-porcentaje_general_retardos = (total_retardos / total_registros) * 100 if total_registros > 0 else 0
+porcentaje_general_retardos = (
+    (total_retardos / total_registros) * 100 if total_registros > 0 else 0
+)
 
 df_retardo_global = pd.DataFrame({
     "Categoría": ["Materia"],
@@ -329,14 +349,17 @@ fig_r3.update_traces(textposition="inside", textfont_color="white")
 fig_r3.update_layout(yaxis_range=[0, 100])
 st.plotly_chart(fig_r3, use_container_width=True)
 
+# === 4. HISTORIAL DE RETARDOS POR ALUMNO ===
+st.subheader("Historial de retardos por alumno")
 
-# === 4. Historial de retardos por alumno ===
-st.subheader(" Historial de retardos por alumno")
+alumno_retardo = st.selectbox(
+    "Selecciona un alumno para ver sus retardos",
+    df_retardos["Nombre"],
+    key="select_retardos"
+)
 
-alumno_retardo = st.selectbox("Selecciona un alumno para ver sus retardos", df_retardos["Nombre"])
 fila = df_retardos[df_retardos["Nombre"] == alumno_retardo]
 
-# Contar cuántas veces tuvo retardo por unidad
 retardos_por_unidad = {}
 for col in retardo_cols:
     valor = fila[col].values[0]
@@ -361,5 +384,8 @@ fig_r4.update_layout(
     yaxis=dict(tickvals=[0, 1], ticktext=["No", "Sí"]),
     coloraxis_showscale=False
 )
-fig_r4.update_traces(text=df_historial_retardos["Retardo"], textposition="outside")
+fig_r4.update_traces(
+    text=df_historial_retardos["Retardo"],
+    textposition="outside"
+)
 st.plotly_chart(fig_r4, use_container_width=True)

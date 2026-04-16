@@ -67,8 +67,7 @@ df_numeric_grouped["Nombre"] = df["Nombre"]
 df_numeric_grouped["No de control"] = df["No de control"]
 
 for unidad, columnas in unidad_map.items():
-    df_numeric_grouped[unidad] = df[columnas].applymap(lambda x: 1 if x == "✓" else 0).mean(axis=1) * 100
-
+    df_numeric_grouped[unidad] = df_numeric[columnas].mean(axis=1) * 100
 
 
 # === GRÁFICA 1: Porcentaje de asistencia por unidad (agrupado) ===

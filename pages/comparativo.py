@@ -16,7 +16,7 @@ from gsheets_utils import get_sheet, read_ws_df
 # =========================
 # CONFIG APP
 # =========================
-st.set_page_config(page_title="Comparativo de Materias", layout="wide")
+# st.set_page_config(page_title="Comparativo de Materias", layout="wide")
 SHEET_NAME = st.secrets.get("SHEET_NAME", "Seguimiento_Asistencia_2025_2")
 
 st.title(" Comparativo de Asistencia por Materia")
